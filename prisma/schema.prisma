@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String
+  password  String
+  name      String?
+  role      Role      @default(USER)
+
+  posts     Post[]
+  comments  Comment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([email, deletedAt])
+  @@index([deletedAt])
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String
+  posts     Post[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([slug, deletedAt])
+  @@unique([name, deletedAt])
+  @@index([deletedAt])
+}
+
+model Post {
+  id         Int        @id @default(autoincrement())
+  title      String
+  slug       String
+  content    String
+  published  Boolean    @default(false)
+
+  authorId   Int
+  author     User       @relation(fields: [authorId], references: [id])
+
+  categoryId Int?
+  category   Category?  @relation(fields: [categoryId], references: [id])
+
+  comments   Comment[]
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deletedAt  DateTime?
+
+  @@unique([slug, deletedAt])
+  @@index([authorId, deletedAt])
+  @@index([categoryId, deletedAt])
+  @@index([published, deletedAt])
+  @@index([createdAt])
+  @@index([published, deletedAt, createdAt])
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+
+  postId    Int
+  userId    Int
+  parentId  Int?
+
+  post      Post      @relation(fields: [postId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentToComment")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([postId, deletedAt])
+  @@index([userId, deletedAt])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
