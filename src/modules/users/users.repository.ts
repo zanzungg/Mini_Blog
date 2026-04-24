@@ -10,6 +10,74 @@ export type ActiveUser = Omit<User, 'deletedAt'> & {
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  findMany(params: {
+    skip: number;
+    take: number;
+    search?: string;
+    role?: Role;
+  }): Promise<ActiveUser[]> {
+    const { skip, take, search, role } = params;
+
+    return this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        role,
+        ...(search
+          ? {
+              OR: [
+                {
+                  email: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  name: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take,
+    }) as Promise<ActiveUser[]>;
+  }
+
+  countActive(params: { search?: string; role?: Role }): Promise<number> {
+    const { search, role } = params;
+
+    return this.prisma.user.count({
+      where: {
+        deletedAt: null,
+        role,
+        ...(search
+          ? {
+              OR: [
+                {
+                  email: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  name: {
+                    contains: search,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+    });
+  }
+
   findByEmail(email: string): Promise<ActiveUser | null> {
     return this.prisma.user.findFirst({
       where: {
@@ -44,5 +112,36 @@ export class UsersRepository {
         role,
       },
     }) as Promise<ActiveUser>;
+  }
+
+  updateById(
+    id: number,
+    data: {
+      name?: string | null;
+    },
+  ): Promise<ActiveUser | null> {
+    return this.prisma.user
+      .updateManyAndReturn({
+        where: {
+          id,
+          deletedAt: null,
+        },
+        data,
+      })
+      .then((users) => (users[0] as ActiveUser | undefined) ?? null);
+  }
+
+  async softDeleteById(id: number): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    return result.count > 0;
   }
 }
