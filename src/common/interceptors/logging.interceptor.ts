@@ -6,7 +6,11 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
+
+type RequestWithStartTime = Request & {
+  requestStartedAt?: number;
+};
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -14,30 +18,23 @@ export class LoggingInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const httpContext = context.switchToHttp();
-    const request = httpContext.getRequest<Request>();
+    const request = httpContext.getRequest<RequestWithStartTime>();
     const response = httpContext.getResponse<Response>();
 
     const { method, url } = request;
-    const now = Date.now();
+    const startedAt = Date.now();
+    request.requestStartedAt = startedAt;
 
-    return next.handle().pipe(
-      tap({
-        next: () => {
-          const statusCode = response.statusCode;
-          const responseTime = Date.now() - now;
+    // Log only successful requests here. Error logs are handled by GlobalExceptionFilter.
+    response.once('finish', () => {
+      const statusCode = response.statusCode;
 
-          this.logger.log(`${method} ${url} ${statusCode} - ${responseTime}ms`);
-        },
-        error: (err) => {
-          const statusCode = response.statusCode;
-          const responseTime = Date.now() - now;
+      if (statusCode < 400) {
+        const responseTime = Date.now() - startedAt;
+        this.logger.log(`${method} ${url} ${statusCode} - ${responseTime}ms`);
+      }
+    });
 
-          this.logger.error(
-            `${method} ${url} ${statusCode} - ${responseTime}ms`,
-            err?.stack,
-          );
-        },
-      }),
-    );
+    return next.handle();
   }
 }
