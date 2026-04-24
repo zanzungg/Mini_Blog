@@ -8,13 +8,17 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+type RequestWithStartTime = Request & {
+  requestStartedAt?: number;
+};
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithStartTime>();
     const response = ctx.getResponse<Response>();
 
     const statusCode =
@@ -36,9 +40,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode,
       message,
       ...(errors && { errors }),
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      method: request.method,
     };
 
     this.logException(exception, request, statusCode);
@@ -99,12 +100,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   private logException(
     exception: unknown,
-    request: Request,
+    request: RequestWithStartTime,
     statusCode: number,
   ) {
     const { method, url } = request;
+    const responseTime = request.requestStartedAt
+      ? Date.now() - request.requestStartedAt
+      : undefined;
 
-    const logMessage = `${method} ${url} -> ${statusCode}`;
+    const logMessage = `${method} ${url} -> ${statusCode}${
+      responseTime !== undefined ? ` - ${responseTime}ms` : ''
+    }`;
 
     if (statusCode >= 500) {
       this.logger.error(
