@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -14,6 +15,14 @@ function requiredId(id: number | undefined, label: string): number {
 async function main() {
   console.info('Seeding database...');
 
+  const [adminPassword, alicePassword, bobPassword, charliePassword] =
+    await Promise.all([
+      hash('admin123456', 12),
+      hash('alice123456', 12),
+      hash('bob123456', 12),
+      hash('charlie123456', 12),
+    ]);
+
   await prisma.$transaction([
     prisma.comment.deleteMany(),
     prisma.post.deleteMany(),
@@ -24,25 +33,25 @@ async function main() {
   const usersSeed = [
     {
       email: 'admin@mini-blog.local',
-      password: 'admin123456',
+      password: adminPassword,
       name: 'System Admin',
       role: 'ADMIN',
     },
     {
       email: 'alice@mini-blog.local',
-      password: 'alice123456',
+      password: alicePassword,
       name: 'Alice Writer',
       role: 'USER',
     },
     {
       email: 'bob@mini-blog.local',
-      password: 'bob123456',
+      password: bobPassword,
       name: 'Bob Reader',
       role: 'USER',
     },
     {
       email: 'charlie@mini-blog.local',
-      password: 'charlie123456',
+      password: charliePassword,
       name: 'Charlie Dev',
       role: 'USER',
     },

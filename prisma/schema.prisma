@@ -16,6 +16,7 @@ model User {
 
   posts     Post[]
   comments  Comment[]
+  refreshTokens RefreshToken[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -92,4 +93,20 @@ model Comment {
 enum Role {
   USER
   ADMIN
+}
+
+model RefreshToken {
+  id               Int           @id @default(autoincrement())
+  userId           Int
+  jti              String        @unique
+  tokenHash        String
+  expiresAt        DateTime
+  revokedAt        DateTime?
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime      @default(now())
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }
