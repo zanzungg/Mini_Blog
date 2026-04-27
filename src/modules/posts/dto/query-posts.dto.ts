@@ -27,6 +27,11 @@ export class QueryPostsDto {
   user_id?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  category_id?: number;
+
+  @IsOptional()
   @IsString()
   keyword?: string;
 }
