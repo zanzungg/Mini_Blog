@@ -13,6 +13,7 @@ import {
   type ActivePostWithRelations,
   PostsRepository,
 } from './posts.repository';
+import { CategoriesService } from '../categories/categories.service';
 
 type PublicPost = {
   id: number;
@@ -41,12 +42,19 @@ type PublicPostWithRelations = PublicPost & {
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly postsRepository: PostsRepository) {}
+  constructor(
+    private readonly postsRepository: PostsRepository,
+    private readonly categoriesService: CategoriesService,
+  ) {}
 
   async createPost(
     createPostDto: CreatePostDto,
     authUser: AuthUser,
   ): Promise<{ post: PublicPost }> {
+    if (createPostDto.categoryId !== undefined) {
+      await this.categoriesService.findByIdOrThrow(createPostDto.categoryId);
+    }
+
     const slug = await this.generateUniqueSlug(createPostDto.title);
 
     const post = await this.postsRepository.create({
@@ -81,11 +89,13 @@ export class PostsService {
         take: limit,
         status: queryPostsDto.status,
         userId: queryPostsDto.user_id,
+        categoryId: queryPostsDto.category_id,
         keyword: queryPostsDto.keyword,
       }),
       this.postsRepository.countActive({
         status: queryPostsDto.status,
         userId: queryPostsDto.user_id,
+        categoryId: queryPostsDto.category_id,
         keyword: queryPostsDto.keyword,
       }),
     ]);
@@ -128,6 +138,13 @@ export class PostsService {
 
     if (currentPost.published) {
       throw new BadRequestException('Published post cannot be updated');
+    }
+
+    if (
+      updatePostDto.categoryId !== undefined &&
+      updatePostDto.categoryId !== null
+    ) {
+      await this.categoriesService.findByIdOrThrow(updatePostDto.categoryId);
     }
 
     const slug = updatePostDto.title

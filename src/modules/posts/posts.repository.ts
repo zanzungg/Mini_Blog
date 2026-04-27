@@ -91,12 +91,13 @@ export class PostsRepository {
     take: number;
     status?: 'draft' | 'published';
     userId?: number;
+    categoryId?: number;
     keyword?: string;
   }): Promise<ActivePostWithRelations[]> {
-    const { skip, take, status, userId, keyword } = params;
+    const { skip, take, status, userId, categoryId, keyword } = params;
 
     return this.prisma.post.findMany({
-      where: this.buildWhereClause({ status, userId, keyword }),
+      where: this.buildWhereClause({ status, userId, categoryId, keyword }),
       include: {
         author: {
           select: {
@@ -124,12 +125,13 @@ export class PostsRepository {
   countActive(params: {
     status?: 'draft' | 'published';
     userId?: number;
+    categoryId?: number;
     keyword?: string;
   }): Promise<number> {
-    const { status, userId, keyword } = params;
+    const { status, userId, categoryId, keyword } = params;
 
     return this.prisma.post.count({
-      where: this.buildWhereClause({ status, userId, keyword }),
+      where: this.buildWhereClause({ status, userId, categoryId, keyword }),
     });
   }
 
@@ -179,13 +181,15 @@ export class PostsRepository {
   private buildWhereClause(params: {
     status?: 'draft' | 'published';
     userId?: number;
+    categoryId?: number;
     keyword?: string;
   }): Prisma.PostWhereInput {
-    const { status, userId, keyword } = params;
+    const { status, userId, categoryId, keyword } = params;
 
     return {
       deletedAt: null,
       authorId: userId,
+      categoryId,
       ...(status
         ? {
             published: status === 'published',
