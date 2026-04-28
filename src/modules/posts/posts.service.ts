@@ -10,6 +10,7 @@ import { QueryPostsDto } from './dto/query-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import {
   type ActivePost,
+  type ActiveComment,
   type ActivePostWithRelations,
   PostsRepository,
 } from './posts.repository';
@@ -40,6 +41,16 @@ type PublicPostWithRelations = PublicPost & {
   } | null;
 };
 
+type PublicComment = {
+  id: number;
+  content: string;
+  postId: number;
+  userId: number;
+  parentId: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 @Injectable()
 export class PostsService {
   constructor(
@@ -67,6 +78,47 @@ export class PostsService {
 
     return {
       post: this.toPublicPost(post),
+    };
+  }
+
+  async createFullPost(
+    createPostDto: CreatePostDto,
+    authUser: AuthUser,
+  ): Promise<{ post: PublicPost; comments: PublicComment[] }> {
+    if (createPostDto.categoryId !== undefined) {
+      await this.categoriesService.findByIdOrThrow(createPostDto.categoryId);
+    }
+
+    const slug = await this.generateUniqueSlug(createPostDto.title);
+    const defaultCommentUserId = authUser.sub;
+
+    const result = await this.postsRepository.createWithDefaultComments({
+      post: {
+        title: createPostDto.title,
+        slug,
+        content: createPostDto.content,
+        authorId: authUser.sub,
+        categoryId: createPostDto.categoryId,
+      },
+      comments: [
+        {
+          content: 'Default comment #1',
+          userId: defaultCommentUserId,
+        },
+        {
+          content: 'Default comment #2',
+          userId: defaultCommentUserId,
+        },
+        {
+          content: 'Default comment #3',
+          userId: defaultCommentUserId,
+        },
+      ],
+    });
+
+    return {
+      post: this.toPublicPost(result.post),
+      comments: result.comments.map((comment) => this.toPublicComment(comment)),
     };
   }
 
@@ -276,6 +328,18 @@ export class PostsService {
             slug: post.category.slug,
           }
         : null,
+    };
+  }
+
+  private toPublicComment(comment: ActiveComment): PublicComment {
+    return {
+      id: comment.id,
+      content: comment.content,
+      postId: comment.postId,
+      userId: comment.userId,
+      parentId: comment.parentId,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
     };
   }
 
