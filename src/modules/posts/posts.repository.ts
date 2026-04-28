@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type Post } from '@prisma/client';
+import { Prisma, type Comment, type Post } from '@prisma/client';
 import { PrismaService } from '../../core/database/prisma.service';
 
 export type ActivePost = Omit<Post, 'deletedAt'> & {
+  deletedAt: null;
+};
+
+export type ActiveComment = Omit<Comment, 'deletedAt'> & {
   deletedAt: null;
 };
 
@@ -41,6 +45,48 @@ export class PostsRepository {
     return this.prisma.post.create({
       data,
     }) as Promise<ActivePost>;
+  }
+
+  async createWithDefaultComments(data: {
+    post: {
+      title: string;
+      slug: string;
+      content: string;
+      authorId: number;
+      categoryId?: number | null;
+    };
+    comments: Array<{
+      content: string;
+      userId: number;
+      parentId?: number | null;
+    }>;
+  }): Promise<{ post: ActivePost; comments: ActiveComment[] }> {
+    return this.prisma.$transaction(async (tx) => {
+      const post = (await tx.post.create({
+        data: data.post,
+      })) as ActivePost;
+
+      const comments: ActiveComment[] = [];
+
+      for (const commentInput of data.comments) {
+        const comment = (await tx.comment.create({
+          data: {
+            content: commentInput.content,
+            postId: post.id,
+            userId: commentInput.userId,
+            ...(commentInput.parentId !== undefined
+              ? {
+                  parentId: commentInput.parentId,
+                }
+              : {}),
+          },
+        })) as ActiveComment;
+
+        comments.push(comment);
+      }
+
+      return { post, comments };
+    });
   }
 
   findById(id: number): Promise<ActivePost | null> {
