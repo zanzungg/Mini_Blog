@@ -78,4 +78,14 @@ export class PostsController {
   ) {
     return this.postsService.publishPost(id, authUser);
   }
+
+  @Post('full-create')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  fullCreatePost(
+    @Body() createPostDto: CreatePostDto,
+    @CurrentUser() authUser: AuthUser,
+  ) {
+    return this.postsService.createFullPost(createPostDto, authUser);
+  }
 }
