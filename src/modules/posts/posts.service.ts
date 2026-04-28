@@ -280,7 +280,15 @@ export class PostsService {
     const post = await this.postsRepository.publishById(id);
 
     if (!post) {
-      throw new NotFoundException('Post not found');
+      const existingPost = await this.postsRepository.findById(id);
+
+      if (!existingPost) {
+        throw new NotFoundException('Post not found');
+      }
+
+      return {
+        post: this.toPublicPost(existingPost),
+      };
     }
 
     return {

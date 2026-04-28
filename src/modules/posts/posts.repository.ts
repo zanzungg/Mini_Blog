@@ -202,6 +202,7 @@ export class PostsRepository {
         where: {
           id,
           deletedAt: null,
+          published: false,
         },
         data: {
           published: true,
