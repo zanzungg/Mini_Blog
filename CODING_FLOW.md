@@ -13,19 +13,29 @@
 
 ```text
 src/
-├─ core/database
-├─ common
+├─ core/
+│  └─ database/
+├─ common/
+│  ├─ decorators/
+│  ├─ filters/
+│  ├─ guards/
+│  ├─ interceptors/
+│  └─ pipes/
+├─ config/
 └─ modules/
-	├─ posts
-	├─ users
-	├─ comments
-	└─ ...
+  ├─ auth/
+  ├─ categories/
+  ├─ comments/
+  ├─ posts/
+  ├─ stats/
+  └─ users/
 
 prisma/
 ├─ schema.prisma
-├─ migrations/
-└─ seed.ts
+├─ seed.ts
+└─ migrations/
 ```
+
 
 ## 3. Flow chính
 
