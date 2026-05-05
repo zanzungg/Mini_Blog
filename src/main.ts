@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalValidationPipe } from './common/pipes/global-validation.pipe';
@@ -28,6 +29,30 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   const configService = app.get(ConfigService);
+
+  // Swagger (OpenAPI) setup — toggle with SWAGGER_ENABLED env var
+  const swaggerEnabled = configService.get<boolean>('SWAGGER_ENABLED', true);
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Mini Blog API')
+      .setDescription('API documentation for the Mini Blog backend')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          in: 'header',
+        },
+        'jwt',
+      )
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
 
   // Helmet - set secure HTTP headers early
   app.use(helmet());
