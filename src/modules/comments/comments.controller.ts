@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -22,10 +23,13 @@ import { QueryCommentsDto } from './dto/query-comments.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Controller('comments')
+@ApiTags('Comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Post()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a comment' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER, Role.ADMIN)
   createComment(
@@ -36,16 +40,20 @@ export class CommentsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List comments' })
   findComments(@Query() queryCommentsDto: QueryCommentsDto) {
     return this.commentsService.findComments(queryCommentsDto);
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get comment detail' })
   getCommentDetail(@Param('id', ParseIntPipe) id: number) {
     return this.commentsService.getCommentDetail(id);
   }
 
   @Patch(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a comment' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER, Role.ADMIN)
   updateComment(
@@ -57,6 +65,8 @@ export class CommentsController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a comment' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER, Role.ADMIN)
   deleteComment(
