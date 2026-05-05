@@ -1,5 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  ThrottlerModule,
+  ThrottlerGuard,
+  type ThrottlerModuleOptions,
+} from '@nestjs/throttler';
 import { envValidationSchema } from './config/env.validation';
 import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -19,6 +25,18 @@ import { UsersModule } from './modules/users/users.module';
         abortEarly: false,
       },
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): ThrottlerModuleOptions => ({
+        throttlers: [
+          {
+            ttl: Number(configService.get<number>('THROTTLE_TTL_MS', 60000)),
+            limit: Number(configService.get<number>('THROTTLE_LIMIT', 100)),
+          },
+        ],
+      }),
+    }),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -26,6 +44,12 @@ import { UsersModule } from './modules/users/users.module';
     PostsModule,
     StatsModule,
     CommentsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}
