@@ -44,6 +44,35 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+Since this project uses PostgreSQL through Prisma, you should prepare the database and seed data before running the API for the first time:
+
+```bash
+# generate Prisma Client after changing the schema or cloning the project for the first time
+$ npm run prisma:generate
+
+# run migrations in the local environment
+$ npm run prisma:migrate:dev
+
+# load seed data so users, categories, posts, and comments are available
+$ npm run prisma:seed
+
+# open Prisma Studio to inspect the data
+$ npm run prisma:studio
+```
+
+If you want to deploy or run in another environment, use:
+
+```bash
+# apply the existing migrations to the deploy/staging environment
+$ npm run prisma:migrate:deploy
+```
+
+Notes:
+
+- Set `DATABASE_URL` in `.env` before running any Prisma commands.
+- If you change `prisma/schema.prisma`, run `npm run prisma:generate` again.
+- If you want to reset the local sample data, rerun `npm run prisma:seed` after migrations are applied.
+
 ## Run tests
 
 ```bash
