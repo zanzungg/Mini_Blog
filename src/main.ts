@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { GlobalValidationPipe } from './common/pipes/global-validation.pipe';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
 function parseCorsOrigins(value?: string): string | string[] | boolean {
   if (!value) return false;
@@ -26,7 +27,10 @@ async function bootstrap() {
 
   app.useGlobalPipes(new GlobalValidationPipe());
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new ResponseTransformInterceptor(),
+  );
 
   const configService = app.get(ConfigService);
 
