@@ -72,7 +72,7 @@ export class PostsService {
       title: createPostDto.title,
       slug,
       content: createPostDto.content,
-      authorId: authUser.sub,
+      authorId: authUser.userId,
       categoryId: createPostDto.categoryId,
     });
 
@@ -90,14 +90,14 @@ export class PostsService {
     }
 
     const slug = await this.generateUniqueSlug(createPostDto.title);
-    const defaultCommentUserId = authUser.sub;
+    const defaultCommentUserId = authUser.userId;
 
     const result = await this.postsRepository.createWithDefaultComments({
       post: {
         title: createPostDto.title,
         slug,
         content: createPostDto.content,
-        authorId: authUser.sub,
+        authorId: authUser.userId,
         categoryId: createPostDto.categoryId,
       },
       comments: [
@@ -298,7 +298,7 @@ export class PostsService {
 
   private ensurePostOwnerOrAdmin(post: ActivePost, authUser: AuthUser): void {
     const isAdmin = authUser.role === 'ADMIN';
-    const isOwner = post.authorId === authUser.sub;
+    const isOwner = post.authorId === authUser.userId;
 
     if (!isAdmin && !isOwner) {
       throw new ForbiddenException('You can only manage your own posts');

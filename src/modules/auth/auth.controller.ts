@@ -58,6 +58,6 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current authenticated user' })
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() authUser: AuthUser) {
-    return this.authService.getMe(authUser.sub);
+    return this.authService.getMe(authUser.userId);
   }
 }
