@@ -70,7 +70,7 @@ export class CommentsService {
     const comment = await this.commentsRepository.create({
       content: createCommentDto.content,
       postId: createCommentDto.postId,
-      userId: authUser.sub,
+      userId: authUser.userId,
       parentId: createCommentDto.parentId,
     });
 
@@ -218,7 +218,7 @@ export class CommentsService {
     authUser: AuthUser,
   ): void {
     const isAdmin = authUser.role === 'ADMIN';
-    const isOwner = comment.userId === authUser.sub;
+    const isOwner = comment.userId === authUser.userId;
 
     if (!isAdmin && !isOwner) {
       throw new ForbiddenException('You can only manage your own comments');

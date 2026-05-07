@@ -85,7 +85,7 @@ export class UsersService {
   createUser(input: {
     email: string;
     password: string;
-    name?: string;
+    name: string;
   }): Promise<ActiveUser> {
     return this.usersRepository.create(input);
   }
@@ -104,7 +104,7 @@ export class UsersService {
     authUser: AuthUser,
   ): Promise<{ user: PublicUser }> {
     const isAdmin = authUser.role === 'ADMIN';
-    const isOwner = authUser.sub === id;
+    const isOwner = authUser.userId === id;
 
     if (!isAdmin && !isOwner) {
       throw new ForbiddenException('You can only update your own profile');
