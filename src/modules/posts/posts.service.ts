@@ -12,6 +12,7 @@ import {
   type ActivePost,
   type ActiveComment,
   type ActivePostWithRelations,
+  type ActivePostWithRelationsAndComments,
   PostsRepository,
 } from './posts.repository';
 import { CategoriesService } from '../categories/categories.service';
@@ -49,6 +50,22 @@ type PublicComment = {
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type PublicPostComment = PublicComment & {
+  user: {
+    id: number;
+    email: string;
+    name: string | null;
+  };
+};
+
+type PublicThreadedComment = PublicPostComment & {
+  replies: PublicThreadedComment[];
+};
+
+type PublicPostDetail = PublicPostWithRelations & {
+  comments: PublicThreadedComment[];
 };
 
 @Injectable()
@@ -163,15 +180,21 @@ export class PostsService {
     };
   }
 
-  async getPostDetail(id: number): Promise<{ post: PublicPostWithRelations }> {
-    const post = await this.postsRepository.findByIdWithRelations(id);
+  async getPostDetail(id: number): Promise<{ post: PublicPostDetail }> {
+    const post =
+      await this.postsRepository.findByIdWithRelationsAndComments(id);
 
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
     return {
-      post: this.toPublicPostWithRelations(post),
+      post: {
+        ...this.toPublicPostWithRelations(post),
+        comments: this.buildThreadedComments(
+          post.comments.map((comment) => this.toPublicPostComment(comment)),
+        ),
+      },
     };
   }
 
@@ -339,7 +362,15 @@ export class PostsService {
     };
   }
 
-  private toPublicComment(comment: ActiveComment): PublicComment {
+  private toPublicComment(comment: {
+    id: number;
+    content: string;
+    postId: number;
+    userId: number;
+    parentId: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): PublicComment {
     return {
       id: comment.id,
       content: comment.content,
@@ -349,6 +380,52 @@ export class PostsService {
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
     };
+  }
+
+  private toPublicPostComment(
+    comment: ActivePostWithRelationsAndComments['comments'][number],
+  ): PublicPostComment {
+    return {
+      ...this.toPublicComment(comment),
+      user: {
+        id: comment.user.id,
+        email: comment.user.email,
+        name: comment.user.name,
+      },
+    };
+  }
+
+  private buildThreadedComments(
+    comments: PublicPostComment[],
+  ): PublicThreadedComment[] {
+    const nodeById = new Map<number, PublicThreadedComment>();
+
+    for (const comment of comments) {
+      nodeById.set(comment.id, {
+        ...comment,
+        replies: [],
+      });
+    }
+
+    const roots: PublicThreadedComment[] = [];
+
+    for (const node of nodeById.values()) {
+      if (node.parentId === null) {
+        roots.push(node);
+        continue;
+      }
+
+      const parent = nodeById.get(node.parentId);
+
+      if (!parent) {
+        roots.push(node);
+        continue;
+      }
+
+      parent.replies.push(node);
+    }
+
+    return roots;
   }
 
   private async generateUniqueSlug(
