@@ -38,6 +38,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const responseBody = {
       status: 'error',
       statusCode,
+      data: null,
       message,
       ...(errors && { errors }),
     };

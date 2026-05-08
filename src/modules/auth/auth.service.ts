@@ -43,7 +43,7 @@ export class AuthService {
     const user = await this.usersService.createUser({
       email: registerDto.email,
       password: passwordHash,
-      name: registerDto.name,
+      name: registerDto.name.trim(),
     });
 
     return this.issueTokenPair(user);
@@ -139,14 +139,14 @@ export class AuthService {
   }
 
   async verifyJwtPayload(payload: AuthUser): Promise<AuthUser> {
-    const user = await this.usersService.findById(payload.sub);
+    const user = await this.usersService.findById(payload.userId);
 
     if (!user) {
       throw new UnauthorizedException('Invalid access token');
     }
 
     return {
-      sub: user.id,
+      userId: user.id,
       email: user.email,
       role: user.role,
     };
@@ -154,7 +154,7 @@ export class AuthService {
 
   private async issueTokenPair(user: ActiveUser) {
     const payload: AuthUser = {
-      sub: user.id,
+      userId: user.id,
       email: user.email,
       role: user.role,
     };
@@ -184,7 +184,7 @@ export class AuthService {
 
     const jti = randomUUID();
     const token = await this.jwtService.signAsync(
-      { sub: userId, jti },
+      { userId, jti },
       { secret, expiresIn: ttl },
     );
     const tokenHash = await hash(token, 12);
@@ -212,7 +212,7 @@ export class AuthService {
 
   private async rotateRefreshToken(oldTokenId: number, user: ActiveUser) {
     const payload: AuthUser = {
-      sub: user.id,
+      userId: user.id,
       email: user.email,
       role: user.role,
     };
@@ -245,9 +245,9 @@ export class AuthService {
 
   private async verifyRefreshToken(
     refreshTokenDto: RefreshTokenDto,
-  ): Promise<{ sub: number; jti: string }> {
+  ): Promise<{ userId: number; jti: string }> {
     try {
-      return await this.jwtService.verifyAsync<{ sub: number; jti: string }>(
+      return await this.jwtService.verifyAsync<{ userId: number; jti: string }>(
         refreshTokenDto.refreshToken,
         {
           secret: this.configService.getOrThrow<string>('REFRESH_TOKEN_SECRET'),

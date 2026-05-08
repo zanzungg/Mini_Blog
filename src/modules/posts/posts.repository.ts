@@ -31,6 +31,44 @@ export type ActivePostWithRelations = Prisma.PostGetPayload<{
   deletedAt: null;
 };
 
+export type ActivePostWithRelationsAndComments = Prisma.PostGetPayload<{
+  include: {
+    author: {
+      select: {
+        id: true;
+        email: true;
+        name: true;
+      };
+    };
+    category: {
+      select: {
+        id: true;
+        name: true;
+        slug: true;
+      };
+    };
+    comments: {
+      where: {
+        deletedAt: null;
+      };
+      include: {
+        user: {
+          select: {
+            id: true;
+            email: true;
+            name: true;
+          };
+        };
+      };
+      orderBy: {
+        createdAt: 'desc';
+      };
+    };
+  };
+}> & {
+  deletedAt: null;
+};
+
 @Injectable()
 export class PostsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -121,6 +159,50 @@ export class PostsRepository {
         },
       },
     }) as Promise<ActivePostWithRelations | null>;
+  }
+
+  findByIdWithRelationsAndComments(
+    id: number,
+  ): Promise<ActivePostWithRelationsAndComments | null> {
+    return this.prisma.post.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        comments: {
+          where: {
+            deletedAt: null,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    }) as Promise<ActivePostWithRelationsAndComments | null>;
   }
 
   findBySlug(slug: string): Promise<ActivePost | null> {
