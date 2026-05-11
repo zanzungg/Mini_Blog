@@ -153,15 +153,12 @@ async function bootstrap() {
       .setTitle('Mini Blog API')
       .setDescription('API documentation for the Mini Blog backend')
       .setVersion('1.0')
-      .addBearerAuth(
-        {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          in: 'header',
-        },
-        'jwt',
-      )
+      .addBearerAuth({
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+      })
       .build();
 
     const document = wrapSuccessResponses(
