@@ -167,7 +167,6 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: this.usersService.toPublicUser(user),
     };
   }
 
