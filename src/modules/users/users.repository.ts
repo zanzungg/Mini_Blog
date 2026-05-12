@@ -120,15 +120,26 @@ export class UsersRepository {
       name?: string | null;
     },
   ): Promise<ActiveUser | null> {
-    return this.prisma.user
-      .updateManyAndReturn({
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.updateMany({
         where: {
           id,
           deletedAt: null,
         },
         data,
-      })
-      .then((users) => (users[0] as ActiveUser | undefined) ?? null);
+      });
+
+      if (result.count === 0) {
+        return null;
+      }
+
+      return (await tx.user.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+        },
+      })) as ActiveUser | null;
+    });
   }
 
   async softDeleteById(id: number): Promise<boolean> {
