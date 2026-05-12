@@ -7,6 +7,7 @@ import {
 import { type AuthUser } from '../auth/types/auth-user.type';
 import { CreatePostDto } from './dto/create-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
+import { QueryMyPostsDto } from './dto/query-my-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import {
   type ActivePost,
@@ -166,6 +167,50 @@ export class PostsService {
         userId: queryPostsDto.user_id,
         categoryId: queryPostsDto.category_id,
         keyword: queryPostsDto.keyword,
+      }),
+    ]);
+
+    return {
+      data: posts.map((post) => this.toPublicPostWithRelations(post)),
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+      },
+    };
+  }
+
+  async findMyPosts(
+    queryMyPostsDto: QueryMyPostsDto,
+    authUser: AuthUser,
+  ): Promise<{
+    data: PublicPostWithRelations[];
+    meta: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+    };
+  }> {
+    const page = queryMyPostsDto.page ?? 1;
+    const limit = queryMyPostsDto.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [posts, totalItems] = await Promise.all([
+      this.postsRepository.findMany({
+        skip,
+        take: limit,
+        status: queryMyPostsDto.status,
+        userId: authUser.userId,
+        categoryId: queryMyPostsDto.category_id,
+        keyword: queryMyPostsDto.keyword,
+      }),
+      this.postsRepository.countActive({
+        status: queryMyPostsDto.status,
+        userId: authUser.userId,
+        categoryId: queryMyPostsDto.category_id,
+        keyword: queryMyPostsDto.keyword,
       }),
     ]);
 

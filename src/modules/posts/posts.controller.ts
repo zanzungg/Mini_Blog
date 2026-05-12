@@ -21,6 +21,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { type AuthUser } from '../auth/types/auth-user.type';
 import { CreatePostDto } from './dto/create-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
+import { QueryMyPostsDto } from './dto/query-my-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 
@@ -44,6 +45,18 @@ export class PostsController {
   @Get()
   findPosts(@Query() queryPostsDto: QueryPostsDto) {
     return this.postsService.findPosts(queryPostsDto);
+  }
+
+  @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my posts with search, filter, and pagination' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  findMyPosts(
+    @Query() queryMyPostsDto: QueryMyPostsDto,
+    @CurrentUser() authUser: AuthUser,
+  ) {
+    return this.postsService.findMyPosts(queryMyPostsDto, authUser);
   }
 
   @Get(':id')
