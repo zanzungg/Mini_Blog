@@ -266,12 +266,24 @@ export class PostsService {
     };
   }
 
-  async getPostDetail(id: number): Promise<{ post: PublicPostDetail }> {
+  async getPostDetail(
+    id: number,
+    authUser?: AuthUser,
+  ): Promise<{ post: PublicPostDetail }> {
     const post =
       await this.postsRepository.findByIdWithRelationsAndComments(id);
 
-    if (!post || !post.published) {
+    if (!post) {
       throw new NotFoundException('Post not found');
+    }
+
+    if (!post.published) {
+      const isAdmin = authUser?.role === 'ADMIN';
+      const isOwner = authUser?.userId === post.authorId;
+
+      if (!isAdmin && !isOwner) {
+        throw new NotFoundException('Post not found');
+      }
     }
 
     return {
