@@ -15,6 +15,8 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
+import { Logger } from '@nestjs/common';
+
 function parseCorsOrigins(value?: string): string | string[] | boolean {
   if (!value) return false;
   const v = value.trim();
@@ -134,6 +136,8 @@ function wrapSuccessResponses(document: OpenAPIObject): OpenAPIObject {
 }
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableShutdownHooks();
 
@@ -185,7 +189,9 @@ async function bootstrap() {
 
   const port = configService.get<number>('APP_PORT', 3000);
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
+
+  logger.log(`Application is running on: ${await app.getUrl()}`);
 }
 
 bootstrap();

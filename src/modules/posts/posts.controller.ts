@@ -17,10 +17,12 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { type AuthUser } from '../auth/types/auth-user.type';
 import { CreatePostDto } from './dto/create-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
+import { QueryAdminPostsDto } from './dto/query-admin-posts.dto';
 import { QueryMyPostsDto } from './dto/query-my-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
@@ -47,6 +49,24 @@ export class PostsController {
     return this.postsService.findPosts(queryPostsDto);
   }
 
+  @Get('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[ADMIN] List all posts with filters' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  findAllPostsAdmin(@Query() queryPostsDto: QueryAdminPostsDto) {
+    return this.postsService.findAllPostsAdmin(queryPostsDto);
+  }
+
+  @Get('admin/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[ADMIN] Get any post detail including draft' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  getPostDetailAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.postsService.getPostDetailAdmin(id);
+  }
+
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get my posts with search, filter, and pagination' })
@@ -60,8 +80,17 @@ export class PostsController {
   }
 
   @Get(':id')
-  getPostDetail(@Param('id', ParseIntPipe) id: number) {
-    return this.postsService.getPostDetail(id);
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get post detail (published for public, draft accessible for owner/admin)',
+  })
+  @UseGuards(OptionalJwtAuthGuard)
+  getPostDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() authUser?: AuthUser,
+  ) {
+    return this.postsService.getPostDetail(id, authUser);
   }
 
   @Patch(':id')
