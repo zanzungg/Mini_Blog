@@ -17,6 +17,7 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { type AuthUser } from '../auth/types/auth-user.type';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -79,8 +80,17 @@ export class PostsController {
   }
 
   @Get(':id')
-  getPostDetail(@Param('id', ParseIntPipe) id: number) {
-    return this.postsService.getPostDetail(id);
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get post detail (published for public, draft accessible for owner/admin)',
+  })
+  @UseGuards(OptionalJwtAuthGuard)
+  getPostDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() authUser?: AuthUser,
+  ) {
+    return this.postsService.getPostDetail(id, authUser);
   }
 
   @Patch(':id')
