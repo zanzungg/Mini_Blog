@@ -1,6 +1,6 @@
 import { OmitType } from '@nestjs/swagger';
-import { QueryPostsDto } from './query-posts.dto';
+import { QueryAdminPostsDto } from './query-admin-posts.dto';
 
-export class QueryMyPostsDto extends OmitType(QueryPostsDto, [
+export class QueryMyPostsDto extends OmitType(QueryAdminPostsDto, [
   'user_id',
 ] as const) {}
