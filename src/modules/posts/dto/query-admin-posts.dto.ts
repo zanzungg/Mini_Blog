@@ -1,7 +1,12 @@
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-export class QueryPostsDto {
+export enum PostStatusFilter {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+}
+
+export class QueryAdminPostsDto {
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -19,6 +24,17 @@ export class QueryPostsDto {
     maximum: 100,
   })
   limit?: number = 10;
+
+  @IsOptional()
+  @IsEnum(PostStatusFilter)
+  @ApiPropertyOptional({ enum: PostStatusFilter })
+  status?: PostStatusFilter;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @ApiPropertyOptional({ type: 'number', minimum: 1 })
+  user_id?: number;
 
   @IsOptional()
   @IsInt()

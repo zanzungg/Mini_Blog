@@ -8,6 +8,7 @@ import { type AuthUser } from '../auth/types/auth-user.type';
 import { CreatePostDto } from './dto/create-post.dto';
 import { QueryPostsDto } from './dto/query-posts.dto';
 import { QueryMyPostsDto } from './dto/query-my-posts.dto';
+import { QueryAdminPostsDto } from './dto/query-admin-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import {
   type ActivePost,
@@ -157,6 +158,46 @@ export class PostsService {
       this.postsRepository.findMany({
         skip,
         take: limit,
+        status: 'published',
+        categoryId: queryPostsDto.category_id,
+        keyword: queryPostsDto.keyword,
+      }),
+      this.postsRepository.countActive({
+        status: 'published',
+        categoryId: queryPostsDto.category_id,
+        keyword: queryPostsDto.keyword,
+      }),
+    ]);
+
+    return {
+      data: posts.map((post) => this.toPublicPostWithRelations(post)),
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+      },
+    };
+  }
+
+  async findAllPostsAdmin(queryPostsDto: QueryAdminPostsDto): Promise<{
+    data: PublicPostWithRelations[];
+    meta: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+    };
+  }> {
+    const page = queryPostsDto.page ?? 1;
+    const limit = queryPostsDto.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    // Admin nhận full filter từ query, không bị ép gì
+    const [posts, totalItems] = await Promise.all([
+      this.postsRepository.findMany({
+        skip,
+        take: limit,
         status: queryPostsDto.status,
         userId: queryPostsDto.user_id,
         categoryId: queryPostsDto.category_id,
@@ -226,6 +267,24 @@ export class PostsService {
   }
 
   async getPostDetail(id: number): Promise<{ post: PublicPostDetail }> {
+    const post =
+      await this.postsRepository.findByIdWithRelationsAndComments(id);
+
+    if (!post || !post.published) {
+      throw new NotFoundException('Post not found');
+    }
+
+    return {
+      post: {
+        ...this.toPublicPostWithRelations(post),
+        comments: this.buildThreadedComments(
+          post.comments.map((comment) => this.toPublicPostComment(comment)),
+        ),
+      },
+    };
+  }
+
+  async getPostDetailAdmin(id: number): Promise<{ post: PublicPostDetail }> {
     const post =
       await this.postsRepository.findByIdWithRelationsAndComments(id);
 
