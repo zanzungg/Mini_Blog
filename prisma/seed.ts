@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { PrismaClient } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import { hash } from 'bcryptjs';
@@ -24,6 +26,9 @@ async function main() {
     ]);
 
   await prisma.$transaction([
+    prisma.maintenanceUser.deleteMany(),
+    prisma.maintenanceIp.deleteMany(),
+    prisma.systemSetting.deleteMany(),
     prisma.comment.deleteMany(),
     prisma.post.deleteMany(),
     prisma.category.deleteMany(),
@@ -70,6 +75,34 @@ async function main() {
   const userIdByEmail = new Map<string, number>(
     users.map((user): [string, number] => [user.email, user.id]),
   );
+
+  const adminUserId = requiredId(
+    userIdByEmail.get('admin@mini-blog.local'),
+    'admin user',
+  );
+
+  await prisma.systemSetting.createMany({
+    data: [
+      { key: 'maintenance.enabled', value: 'true' },
+      {
+        key: 'maintenance.message',
+        value:
+          'We are currently performing maintenance. Please check back later.',
+      },
+    ],
+  });
+
+  await prisma.maintenanceUser.create({
+    data: {
+      userId: adminUserId,
+    },
+  });
+
+  await prisma.maintenanceIp.create({
+    data: {
+      ip: '127.0.0.1',
+    },
+  });
 
   const categoriesSeed = [
     { name: 'Technology', slug: 'technology' },
@@ -134,10 +167,7 @@ async function main() {
       content:
         'This post demonstrates practical seeding patterns for users, categories, posts, and threaded comments while keeping data deterministic.',
       published: false,
-      authorId: requiredId(
-        userIdByEmail.get('admin@mini-blog.local'),
-        'admin user',
-      ),
+      authorId: adminUserId,
       categoryId: requiredId(
         categoryIdBySlug.get('tutorial'),
         'tutorial category',
