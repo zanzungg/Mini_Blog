@@ -8,9 +8,11 @@ import {
 } from '@nestjs/throttler';
 import { envValidationSchema } from './config/env.validation';
 import { PrismaModule } from './core/database/prisma.module';
+import { MaintenanceGuard } from './common/guards/maintenance.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CommentsModule } from './modules/comments/comments.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { UsersModule } from './modules/users/users.module';
@@ -38,6 +40,7 @@ import { UsersModule } from './modules/users/users.module';
       }),
     }),
     PrismaModule,
+    MaintenanceModule,
     UsersModule,
     AuthModule,
     CategoriesModule,
@@ -46,6 +49,10 @@ import { UsersModule } from './modules/users/users.module';
     CommentsModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: MaintenanceGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
