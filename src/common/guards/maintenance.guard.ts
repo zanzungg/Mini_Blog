@@ -95,6 +95,12 @@ export class MaintenanceGuard implements CanActivate {
 
   private getClientIp(request: Request): string | null {
     const forwarded = request.headers['x-forwarded-for'];
+
+    console.log({
+      requestIp: request.ip,
+      forwarded,
+    });
+
     const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded;
 
     if (raw) {
