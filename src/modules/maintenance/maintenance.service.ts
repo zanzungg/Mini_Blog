@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { QueryMaintenanceIpsDto } from './dto/query-maintenance-ips.dto';
+import { QueryMaintenanceUsersDto } from './dto/query-maintenance-users.dto';
 import { MaintenanceRepository } from './maintenance.repository';
 
 const MAINTENANCE_ENABLED_KEY = 'maintenance.enabled';
@@ -80,8 +82,8 @@ export class MaintenanceService {
     return this.getMaintenanceConfig();
   }
 
-  async listMaintenanceUsers(): Promise<
-    Array<{
+  async listMaintenanceUsers(query: QueryMaintenanceUsersDto): Promise<{
+    data: Array<{
       id: number;
       userId: number;
       createdAt: Date;
@@ -90,9 +92,35 @@ export class MaintenanceService {
         email: string;
         name: string | null;
       };
-    }>
-  > {
-    return this.maintenanceRepository.listMaintenanceUsers();
+    }>;
+    meta: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+    };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [users, totalItems] = await Promise.all([
+      this.maintenanceRepository.listMaintenanceUsers({
+        skip,
+        take: limit,
+      }),
+      this.maintenanceRepository.countMaintenanceUsers(),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+      },
+    };
   }
 
   async addMaintenanceUserByEmail(email: string): Promise<{ success: true }> {
@@ -125,10 +153,36 @@ export class MaintenanceService {
     return { success: true };
   }
 
-  async listMaintenanceIps(): Promise<
-    Array<{ id: number; ip: string; createdAt: Date }>
-  > {
-    return this.maintenanceRepository.listMaintenanceIps();
+  async listMaintenanceIps(query: QueryMaintenanceIpsDto): Promise<{
+    data: Array<{ id: number; ip: string; createdAt: Date }>;
+    meta: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+    };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [ips, totalItems] = await Promise.all([
+      this.maintenanceRepository.listMaintenanceIps({
+        skip,
+        take: limit,
+      }),
+      this.maintenanceRepository.countMaintenanceIps(),
+    ]);
+
+    return {
+      data: ips,
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+      },
+    };
   }
 
   async addMaintenanceIp(ip: string): Promise<{ success: true }> {

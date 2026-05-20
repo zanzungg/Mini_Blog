@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -16,6 +17,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AddMaintenanceIpDto } from './dto/add-maintenance-ip.dto';
 import { AddMaintenanceUserDto } from './dto/add-maintenance-user.dto';
+import { QueryMaintenanceIpsDto } from './dto/query-maintenance-ips.dto';
+import { QueryMaintenanceUsersDto } from './dto/query-maintenance-users.dto';
 import { UpdateMaintenanceConfigDto } from './dto/update-maintenance-config.dto';
 import { MaintenanceService } from './maintenance.service';
 
@@ -43,8 +46,10 @@ export class MaintenanceController {
 
   @Get('whitelist/users')
   @ApiOperation({ summary: '[ADMIN] List maintenance users' })
-  listUsers() {
-    return this.maintenanceService.listMaintenanceUsers();
+  listUsers(@Query() queryMaintenanceUsersDto: QueryMaintenanceUsersDto) {
+    return this.maintenanceService.listMaintenanceUsers(
+      queryMaintenanceUsersDto,
+    );
   }
 
   @Post('whitelist/users')
@@ -63,8 +68,8 @@ export class MaintenanceController {
 
   @Get('whitelist/ips')
   @ApiOperation({ summary: '[ADMIN] List maintenance IPs' })
-  listIps() {
-    return this.maintenanceService.listMaintenanceIps();
+  listIps(@Query() queryMaintenanceIpsDto: QueryMaintenanceIpsDto) {
+    return this.maintenanceService.listMaintenanceIps(queryMaintenanceIpsDto);
   }
 
   @Post('whitelist/ips')
