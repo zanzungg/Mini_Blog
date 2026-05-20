@@ -90,7 +90,7 @@ export class MaintenanceRepository {
     return !!entry;
   }
 
-  async listMaintenanceUsers(): Promise<
+  async listMaintenanceUsers(params: { skip: number; take: number }): Promise<
     Array<{
       id: number;
       userId: number;
@@ -102,6 +102,8 @@ export class MaintenanceRepository {
       };
     }>
   > {
+    const { skip, take } = params;
+
     return this.prisma.maintenanceUser.findMany({
       include: {
         user: {
@@ -115,17 +117,32 @@ export class MaintenanceRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take,
     });
   }
 
-  async listMaintenanceIps(): Promise<
-    Array<{ id: number; ip: string; createdAt: Date }>
-  > {
+  async countMaintenanceUsers(): Promise<number> {
+    return this.prisma.maintenanceUser.count();
+  }
+
+  async listMaintenanceIps(params: {
+    skip: number;
+    take: number;
+  }): Promise<Array<{ id: number; ip: string; createdAt: Date }>> {
+    const { skip, take } = params;
+
     return this.prisma.maintenanceIp.findMany({
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take,
     });
+  }
+
+  async countMaintenanceIps(): Promise<number> {
+    return this.prisma.maintenanceIp.count();
   }
 
   async createMaintenanceUser(userId: number): Promise<void> {
